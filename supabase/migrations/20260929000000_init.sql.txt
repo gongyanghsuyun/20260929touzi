@@ -1,0 +1,5 @@
+create table if not exists test_table (
+  id bigint primary key generated always as identity,
+  name text,
+  create_at timestamp default now()
+);
