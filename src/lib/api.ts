@@ -14,6 +14,9 @@ export async function serverRequest<T>(
     },
   })
   const body = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(body.error || '服务暂时不可用')
+  if (!response.ok) {
+    const message = typeof body.error === 'string' ? body.error : `服务暂时不可用（HTTP ${response.status}）`
+    throw new Error(message)
+  }
   return body as T
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
 import { serverRequest } from './lib/api'
@@ -1240,6 +1240,7 @@ export default function App() {
   const [showSignIn, setShowSignIn] = useState(false)
   const [syncStatus, setSyncStatus] = useState('仅本机')
   const [cloudReady, setCloudReady] = useState(false)
+  const lastCloudSnapshot = useRef<string | null>(null)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session))
@@ -1259,6 +1260,12 @@ export default function App() {
           if (workspace.companies) cStore.replace(workspace.companies)
           if (workspace.funds) fStore.replace(workspace.funds)
           if (workspace.notes) nStore.replace(workspace.notes)
+          lastCloudSnapshot.current = JSON.stringify({
+            knowledge: workspace.knowledge ?? kStore.items,
+            companies: workspace.companies ?? cStore.items,
+            funds: workspace.funds ?? fStore.items,
+            notes: workspace.notes ?? nStore.items,
+          })
         }
         setCloudReady(true); setSyncStatus('云端已同步')
       })
@@ -1268,10 +1275,15 @@ export default function App() {
 
   useEffect(() => {
     if (!session || !cloudReady) return
+    const snapshot = JSON.stringify({ knowledge: kStore.items, companies: cStore.items, funds: fStore.items, notes: nStore.items })
+    if (snapshot === lastCloudSnapshot.current) {
+      setSyncStatus('云端已同步')
+      return
+    }
     setSyncStatus('正在保存…')
     const timer = window.setTimeout(() => {
       serverRequest('/workspace', session.access_token, { method: 'PUT', body: JSON.stringify({ knowledge: kStore.items, companies: cStore.items, funds: fStore.items, notes: nStore.items }) })
-        .then(() => setSyncStatus('云端已同步')).catch(() => setSyncStatus('同步稍后重试'))
+        .then(() => { lastCloudSnapshot.current = snapshot; setSyncStatus('云端已同步') }).catch(() => setSyncStatus('同步稍后重试'))
     }, 700)
     return () => window.clearTimeout(timer)
   }, [session, cloudReady, kStore.items, cStore.items, fStore.items, nStore.items])
