@@ -1,0 +1,10 @@
+{
+  "description": "Transforms documents into professional web pages quickly, enabling users to create polished online content with ease and efficiency.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
